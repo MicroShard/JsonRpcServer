@@ -2,16 +2,14 @@
 
 namespace MicroShard\JsonRpcServer;
 
+use Closure;
+use Exception;
 use MicroShard\JsonRpcServer\Exception\RpcException;
+use TypeError;
 
 class Directory
 {
     const VERSION_LATEST = 'latest';
-
-    /**
-     * @var HandlerInterface[]
-     */
-    protected $handlers = [];
 
     /**
      * @var array
@@ -41,7 +39,7 @@ class Directory
 
         //TODO: VALIDATE - overwrite existing?
         $this->definitions[$resource][$method][$version] = [
-            'className' => null,
+            'constructor' => null,
             'handler' => null
         ];
         return $this;
@@ -51,19 +49,19 @@ class Directory
      * @param string $resource
      * @param string|array $method
      * @param string $version
-     * @param string $className
+     * @param Closure $definition
      * @return $this
      */
-    public function addDefinition(string $resource, string $method, string $version, string $className): Directory
+    public function addHandlerDefinition(string $resource, $method, string $version, Closure $definition): Directory
     {
         if (is_array($method)) {
             foreach ($method as $meth){
                 $this->initDefinition($resource, $meth, $version);
-                $this->definitions[$resource][$meth][$version]['className'] = $className;
+                $this->definitions[$resource][$meth][$version]['constructor'] = $definition;
             }
         } else {
             $this->initDefinition($resource, $method, $version);
-            $this->definitions[$resource][$method][$version]['className'] = $className;
+            $this->definitions[$resource][$method][$version]['constructor'] = $definition;
         }
         return $this;
     }
@@ -75,7 +73,7 @@ class Directory
      * @param HandlerInterface $handler
      * @return $this
      */
-    public function addHandler(string $resource, string $method, string $version, HandlerInterface $handler): Directory
+    public function addHandler(string $resource, $method, string $version, HandlerInterface $handler): Directory
     {
         if (is_array($method)) {
             foreach ($method as $meth) {
@@ -86,7 +84,6 @@ class Directory
             $this->initDefinition($resource, $method, $version);
             $this->definitions[$resource][$method][$version]['handler'] = $handler;
         }
-        $this->handlers[get_class($handler)] = $handler;
         return $this;
     }
 
@@ -120,29 +117,42 @@ class Directory
             throw RpcException::create("invalid api path: $resource/$method/$version", ErrorCode::INVALID_API_PATH, Server::HTTP_NOT_FOUND);
         }
 
-        $definition = $this->definitions[$resource][$method][$version];
+        $definition = &$this->definitions[$resource][$method][$version];
         $handler = null;
 
-        if ($definition['handler']) {
+        if (isset($definition['handler']) && $definition['handler']) {
             $handler = $definition['handler'];
-        } else if($definition['className']) {
-            if (!isset($this->handlers[$definition['className']])) {
-                $handler = new $definition['className']();
-                $this->handlers[$definition['className']] = $handler;
-            } else {
-                $handler = $this->handlers[$definition['className']];
+        } else if(isset($definition['constructor']) && $definition['constructor']) {
+            try {
+                $handler = $this->constructHandler($definition['constructor']);
+            } catch (TypeError $error) {
+                throw RpcException::create("unable to process: $resource/$method/$version", ErrorCode::INVALID_CONSTRUCTOR_HANDLER, Server::HTTP_INTERNAL_SERVER_ERROR);
+            } catch (Exception $exception) {
+                throw RpcException::create("unable to process: $resource/$method/$version", ErrorCode::FAULTY_CONSTRUCTOR_HANDLER, Server::HTTP_INTERNAL_SERVER_ERROR);
             }
+            $definition['handler'] = $handler;
         }
 
         if (is_null($handler)){
-            $handler = $this->getHandlerExtended($definition, $resource, $method, $version);
-        }
-
-        if (is_null($handler)) {
-            throw RpcException::create("unable to process: $resource/$method/$version", ErrorCode::UNABLE_TO_PROCESS, Server::HTTP_INTERNAL_SERVER_ERROR);
+            try {
+                $handler = $this->getHandlerExtended($definition, $resource, $method, $version);
+            } catch (TypeError $error) {
+                throw RpcException::create("unable to process: $resource/$method/$version", ErrorCode::INVALID_EXTENSION_HANDLER, Server::HTTP_INTERNAL_SERVER_ERROR);
+            } catch (Exception $exception) {
+                throw RpcException::create("unable to process: $resource/$method/$version", ErrorCode::FAULTY_EXTENSION_HANDLER, Server::HTTP_INTERNAL_SERVER_ERROR);
+            }
         }
 
         return $handler;
+    }
+
+    /**
+     * @param Closure $constructor
+     * @return HandlerInterface
+     */
+    protected function constructHandler(Closure $constructor): HandlerInterface
+    {
+        return $constructor();
     }
 
     /**

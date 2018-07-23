@@ -11,7 +11,7 @@ class TestCase extends \PHPUnit\Framework\TestCase
 {
     /**
      * @param Closure $function
-     * @return Exception|null
+     * @return Exception|RpcException|null
      */
     public function getException(Closure $function)
     {
