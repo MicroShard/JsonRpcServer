@@ -2,4 +2,7 @@ language: php
 php:
   - '7.2'
 
-script: vendor/bin/phpunit
+before_script:
+  - composer install --no-interaction --prefer-source --dev
+script:
+  - vendor/bin/phpunit
