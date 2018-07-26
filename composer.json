@@ -1,19 +1,20 @@
 {
   "name": "microshard/jsonrpcserver",
-  "description" : "A lightweight JsonRpc Server Bundle for PHP",
-  "authors" : [{
-    "name" : "Rene Winklewski",
-    "email" : "rene.winklewski@gmail.com"
+  "description": "A lightweight JsonRpc Server Bundle for PHP",
+  "type": "library",
+  "authors": [{
+    "name": "Rene Winklewski",
+    "email": "rene.winklewski@gmail.com"
   }],
-  "keywords" : [
-    "Json", "Rpc"
+  "keywords": [
+    "Json",
+    "Rpc",
+    "Api"
   ],
-  "license" : [
-    "MIT"
-  ],
+  "license": "MIT",
   "minimum-stability": "dev",
   "autoload": {
-    "psr-4" : {
+    "psr-4": {
       "MicroShard\\JsonRpcServer\\" : "src/",
       "MicroShard\\JsonRpcServer\\Test\\" : "tests/"
     }
