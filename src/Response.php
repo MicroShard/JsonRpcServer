@@ -4,6 +4,10 @@ namespace MicroShard\JsonRpcServer;
 
 class Response
 {
+    const FIELD_STATUS = 'status';
+    const FIELD_ERROR = 'error';
+    const FIELD_MESSAGE = 'message';
+
     /**
      * @var string[]
      */

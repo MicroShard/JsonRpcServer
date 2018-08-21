@@ -80,34 +80,37 @@ class Server
     public function run(ServerRequestInterface $httpRequest)
     {
         $result = [
-            'status' => self::HTTP_OK,
-            'payload' => []
+            Response::FIELD_STATUS => self::HTTP_OK,
+            Request::FIELD_PAYLOAD => []
         ];
 
         try {
             $request = $this->getRpcRequest($httpRequest);
-            $result['resource'] = $request->getResource();
-            $result['method'] = $request->getMethod();
-            $result['version'] = $request->getVersion();
+            $result[Request::FIELD_RESOURCE] = $request->getResource();
+            $result[Request::FIELD_METHOD] = $request->getMethod();
+            $result[Request::FIELD_VERSION] = $request->getVersion();
+            if ($requestId = $request->getRequestId()) {
+                $result[Request::FIELD_REQUEST_ID] = $requestId;
+            }
 
             if ($this->getAuthenticator()->authenticate($request)) {
                 $handler = $this->getHandlerForRequest($request);
-                $result['payload'] = $handler->handle($request);
-                $result['message'] = "OK";
+                $result[Request::FIELD_PAYLOAD] = $handler->handle($request);
+                $result[Response::FIELD_MESSAGE] = "OK";
             } else {
-                $result['status'] = self::HTTP_UNAUTHORIZED;
-                $result['error'] = ErrorCode::INVALID_AUTHORIZATION;
-                $result['message'] = 'unauthorized';
+                $result[Response::FIELD_STATUS] = self::HTTP_UNAUTHORIZED;
+                $result[Response::FIELD_ERROR] = ErrorCode::INVALID_AUTHORIZATION;
+                $result[Response::FIELD_MESSAGE] = 'unauthorized';
             }
         } catch (RpcException $exception) {
-            $result['status'] = $exception->getStatusCode();
-            $result['error'] = $exception->getCode();
-            $result['message'] = $exception->getMessage();
-            $result['payload'] = $exception->getErrorPayload();
+            $result[Response::FIELD_STATUS] = $exception->getStatusCode();
+            $result[Response::FIELD_ERROR] = $exception->getCode();
+            $result[Response::FIELD_MESSAGE] = $exception->getMessage();
+            $result[Request::FIELD_PAYLOAD] = $exception->getErrorPayload();
         } catch (\Exception $exception) {
-            $result['status'] = self::HTTP_INTERNAL_SERVER_ERROR;
-            $result['error'] = ErrorCode::ERROR_CODE_UNKNOWN;
-            $result['message'] = $exception->getMessage();
+            $result[Response::FIELD_STATUS] = self::HTTP_INTERNAL_SERVER_ERROR;
+            $result[Response::FIELD_ERROR] = ErrorCode::ERROR_CODE_UNKNOWN;
+            $result[Response::FIELD_MESSAGE] = $exception->getMessage();
         }
 
         self::getResponse(self::HTTP_OK, $result)->send();

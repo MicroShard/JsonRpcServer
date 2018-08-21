@@ -11,6 +11,7 @@ class Request
     const FIELD_VERSION = 'version';
     const FIELD_PAYLOAD = 'payload';
     const FIELD_AUTH = 'auth';
+    const FIELD_REQUEST_ID = 'id';
 
     /**
      * @var string
@@ -98,5 +99,15 @@ class Request
         return (isset($this->data[self::FIELD_AUTH]))
             ? $this->data[self::FIELD_AUTH]
             : [];
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getRequestId()
+    {
+        return (isset($this->data[self::FIELD_REQUEST_ID]))
+            ? $this->data[self::FIELD_REQUEST_ID]
+            : null;
     }
 }
