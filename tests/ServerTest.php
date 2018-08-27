@@ -50,11 +50,12 @@ class ServerTest extends TestCase
         $httpRequest->setBodyData([
             Request::FIELD_RESOURCE => 'resource_a',
             Request::FIELD_METHOD => 'method_1',
+            Request::FIELD_REQUEST_ID => '123'
         ]);
 
         $server = new Server($directory, $authenticator);
 
-        $this->expectOutputString('{"status":200,"payload":{"value":"test result"},"resource":"resource_a","method":"method_1","version":"latest","message":"OK"}');
+        $this->expectOutputString('{"status":200,"payload":{"value":"test result"},"resource":"resource_a","method":"method_1","version":"latest","id":"123","message":"OK"}');
         $server->run($httpRequest);
     }
 

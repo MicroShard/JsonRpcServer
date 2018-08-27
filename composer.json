@@ -29,6 +29,7 @@
     "php-mock/php-mock": "^2.0"
   },
   "suggest": {
-    "guzzlehttp/guzzle": "As a possible implementation of the Psr ServerRequestInterface"
+    "guzzlehttp/guzzle": "As a possible implementation of the Psr ServerRequestInterface",
+    "microshard/jsonrpcclient": "A client bundle for communication with the JsonRpcServer"
   }
 }
